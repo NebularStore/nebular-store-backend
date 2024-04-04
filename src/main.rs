@@ -1,4 +1,5 @@
 use crate::controller::config::config_router;
+use crate::controller::theme::theme_router;
 use crate::general_config::{TracingLevel, RELOAD_HANDLE};
 use crate::state::init_state;
 use axum::Router;
@@ -39,12 +40,15 @@ async fn main() {
         .with(fmt::Layer::default())
         .init();
 
-    let app = Router::new().nest("/config", config_router()).layer(
-        ServiceBuilder::new()
-            .layer(AddExtensionLayer::new(state.clone()))
-            .layer(TraceLayer::new_for_http())
-            .into_inner(),
-    );
+    let app = Router::new()
+        .nest("/config", config_router())
+        .nest("/theme", theme_router())
+        .layer(
+            ServiceBuilder::new()
+                .layer(AddExtensionLayer::new(state.clone()))
+                .layer(TraceLayer::new_for_http())
+                .into_inner(),
+        );
 
     let port = state.read().await.general_config.server.port;
     let address = SocketAddr::from(([0, 0, 0, 0], port));

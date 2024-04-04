@@ -5,6 +5,7 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use serde::Deserialize;
+use std::ops::Deref;
 
 pub fn config_router() -> Router {
     Router::new()
@@ -15,11 +16,11 @@ pub fn config_router() -> Router {
 }
 
 async fn general_config(Extension(state): Extension<SharedState>) -> impl IntoResponse {
-    Json(state.read().await.general_config().clone())
+    Json(state.read().await.general_config.clone())
 }
 
 async fn admin_config(Extension(state): Extension<SharedState>) -> impl IntoResponse {
-    Json(state.read().await.admin_config().clone())
+    Json(state.read().await.admin_config.clone())
 }
 
 #[derive(Deserialize)]
@@ -33,7 +34,7 @@ async fn check_admin_hash(
     state
         .read()
         .await
-        .admin_config()
+        .admin_config
         .check_admin_hash(admin_hash.0.admin_hash)
         .to_string()
 }
@@ -64,7 +65,15 @@ async fn change_config(
     let worked = match category.as_str() {
         "admin" => match part.as_str() {
             "credentials" => match param.as_str() {
-                "password" => true,
+                "password" => {
+                    state
+                        .write()
+                        .await
+                        .admin_config
+                        .credentials
+                        .set_password(payload.value);
+                    true
+                }
                 _ => false,
             },
             _ => false,
@@ -73,22 +82,28 @@ async fn change_config(
             "server" => match param.as_str() {
                 "port" => true,
                 _ => false,
-            }
+            },
             "theme" => match param.as_str() {
                 "icon_path" => true,
                 "company_name" => true,
                 _ => false,
-            }
+            },
             "logging" => match param.as_str() {
                 "max_level" => true,
                 _ => false,
-            }
-            _ => false
+            },
+            _ => false,
         },
         _ => false,
     };
 
     if worked {
+        if state.read().await.admin_config.write().is_err() {
+            return (StatusCode::INTERNAL_SERVER_ERROR, "Failed to save config");
+        }
+        if state.read().await.general_config.write().is_err() {
+            return (StatusCode::INTERNAL_SERVER_ERROR, "Failed to save config");
+        }
         (StatusCode::OK, "")
     } else {
         (StatusCode::BAD_REQUEST, "Unknown config")

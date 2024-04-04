@@ -7,19 +7,8 @@ use crate::admin_config::AdminConfig;
 pub type SharedState = Arc<RwLock<State>>;
 
 pub struct State {
-    general_config: GeneralConfig,
-    admin_config: AdminConfig,
-}
-
-impl State {
-    pub fn general_config(&self) -> &GeneralConfig {
-        &self.general_config
-    }
-
-
-    pub fn admin_config(&self) -> &AdminConfig {
-        &self.admin_config
-    }
+    pub general_config: GeneralConfig,
+    pub admin_config: AdminConfig,
 }
 
 pub fn init_state() -> Result<SharedState> {

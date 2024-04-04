@@ -20,9 +20,9 @@ async fn main() {
     let level = state
         .read()
         .await
-        .general_config()
-        .logging()
-        .max_level()
+        .general_config
+        .logging
+        .max_level
         .clone()
         .unwrap_or(TracingLevel::Warn)
         .level();
@@ -37,7 +37,7 @@ async fn main() {
                 .into_inner(),
         );
 
-    let port = state.read().await.general_config().server().port();
+    let port = state.read().await.general_config.server.port;
     let address = SocketAddr::from(([0, 0, 0, 0], port));
     let listener = tokio::net::TcpListener::bind(address)
         .await

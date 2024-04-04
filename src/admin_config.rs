@@ -1,8 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::fs::File;
-use std::io::Write;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AdminConfig {
@@ -41,7 +39,7 @@ impl Credentials {
         self.password = password;
         self.set_hash();
     }
-    
+
     pub fn set_hash(&mut self) {
         self.hash = sha256::digest(self.password.clone());
     }

@@ -1,7 +1,11 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use std::sync::OnceLock;
+use tracing::metadata::LevelFilter;
+use tracing_subscriber::reload::Handle;
+use tracing_subscriber::{filter, Registry};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GeneralConfig {
@@ -36,9 +40,21 @@ pub struct ThemeConfig {
     pub icon_path: PathBuf,
 }
 
+pub static RELOAD_HANDLE: OnceLock<Handle<LevelFilter, Registry>> = OnceLock::new();
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LoggingConfig {
     pub max_level: Option<TracingLevel>,
+}
+
+impl LoggingConfig {
+    pub fn set_max_level(&mut self, tracing_level: TracingLevel) {
+        self.max_level = Some(tracing_level);
+        RELOAD_HANDLE
+            .get()
+            .unwrap()
+            .reload(self.max_level.as_ref().unwrap().level())
+            .unwrap();
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -51,13 +67,24 @@ pub enum TracingLevel {
 }
 
 impl TracingLevel {
-    pub fn level(self) -> tracing::Level {
+    pub fn from_str(string: &str) -> Result<Self> {
+        Ok(match string {
+            "Trace" => TracingLevel::Trace,
+            "Debug" => TracingLevel::Debug,
+            "Info" => TracingLevel::Info,
+            "Warn" => TracingLevel::Warn,
+            "Error" => TracingLevel::Error,
+            _ => bail!("Invalid enum passed"),
+        })
+    }
+
+    pub fn level(&self) -> filter::LevelFilter {
         match self {
-            TracingLevel::Trace => tracing::Level::TRACE,
-            TracingLevel::Debug => tracing::Level::DEBUG,
-            TracingLevel::Info => tracing::Level::INFO,
-            TracingLevel::Warn => tracing::Level::WARN,
-            TracingLevel::Error => tracing::Level::ERROR,
+            TracingLevel::Trace => LevelFilter::TRACE,
+            TracingLevel::Debug => LevelFilter::DEBUG,
+            TracingLevel::Info => LevelFilter::INFO,
+            TracingLevel::Warn => LevelFilter::WARN,
+            TracingLevel::Error => LevelFilter::ERROR,
         }
     }
 }

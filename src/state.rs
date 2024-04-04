@@ -1,8 +1,8 @@
+use crate::admin_config::AdminConfig;
 use crate::general_config::GeneralConfig;
 use anyhow::Result;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use crate::admin_config::AdminConfig;
 
 pub type SharedState = Arc<RwLock<State>>;
 

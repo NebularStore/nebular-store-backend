@@ -4,6 +4,8 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Extension, Json, Router};
 use std::net::SocketAddr;
+use axum::extract::Query;
+use serde::Deserialize;
 use tower::ServiceBuilder;
 use tower_http::add_extension::AddExtensionLayer;
 use tower_http::trace::TraceLayer;
@@ -27,10 +29,10 @@ async fn main() {
         .unwrap_or(TracingLevel::Warn)
         .level();
     tracing_subscriber::fmt().with_max_level(level).init();
-
     let app = Router::new()
         .route("/general_config", get(general_config))
         .route("/admin_config", get(admin_config))
+        .route("/check_admin_hash", get(check_admin_hash))
         .layer(
             ServiceBuilder::new()
                 .layer(AddExtensionLayer::new(state.clone()))
@@ -53,4 +55,12 @@ async fn general_config(Extension(state): Extension<SharedState>) -> impl IntoRe
 
 async fn admin_config(Extension(state): Extension<SharedState>) -> impl IntoResponse {
     Json(state.read().await.admin_config().clone())
+}
+
+#[derive(Deserialize)]
+pub struct AdminCheckParams {
+    admin_hash: String
+}
+async fn check_admin_hash(Extension(state): Extension<SharedState>, admin_hash: Query<AdminCheckParams>) -> impl IntoResponse {
+    state.read().await.admin_config().check_admin_hash(admin_hash.0.admin_hash).to_string()
 }

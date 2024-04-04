@@ -11,6 +11,7 @@ use tracing::info;
 
 mod general_config;
 mod state;
+mod admin_config;
 
 #[tokio::main]
 async fn main() {
@@ -29,6 +30,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/general_config", get(general_config))
+        .route("/admin_config", get(admin_config))
         .layer(
             ServiceBuilder::new()
                 .layer(AddExtensionLayer::new(state.clone()))
@@ -47,4 +49,8 @@ async fn main() {
 
 async fn general_config(Extension(state): Extension<SharedState>) -> impl IntoResponse {
     Json(state.read().await.general_config().clone())
+}
+
+async fn admin_config(Extension(state): Extension<SharedState>) -> impl IntoResponse {
+    Json(state.read().await.admin_config().clone())
 }

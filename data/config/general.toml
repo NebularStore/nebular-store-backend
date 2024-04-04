@@ -4,3 +4,6 @@ port = 8080
 [theme]
 company_name = "Nebular Store"
 icon_path = "icon.jpeg"
+
+[logging]
+max_level = "Debug"

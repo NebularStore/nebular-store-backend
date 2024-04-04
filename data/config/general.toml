@@ -1,0 +1,6 @@
+[server]
+port = 8080
+
+[theme]
+company_name = "Nebular Store"
+icon_path = "icon.jpeg"

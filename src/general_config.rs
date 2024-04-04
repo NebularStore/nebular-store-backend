@@ -1,9 +1,9 @@
 use anyhow::Result;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GeneralConfig {
     server: ServerConfig,
     #[allow(unused)]
@@ -32,7 +32,7 @@ impl GeneralConfig {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ServerConfig {
     port: u16,
 }
@@ -43,7 +43,7 @@ impl ServerConfig {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ThemeConfig {
     company_name: String,
     icon_path: PathBuf,
@@ -59,7 +59,7 @@ impl ThemeConfig {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LoggingConfig {
     max_level: Option<TracingLevel>,
 }
@@ -70,7 +70,7 @@ impl LoggingConfig {
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum TracingLevel {
     Trace,
     Debug,

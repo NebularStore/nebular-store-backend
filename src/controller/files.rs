@@ -8,26 +8,9 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, post};
 use axum::{Json, Router};
-use axum::body::Bytes;
-use axum::extract::multipart::{Field, MultipartError};
+
 use serde::{Deserialize, Serialize};
 use tower_http::services::ServeDir;
-/*
-/files
-    /structure
-        GET /:path
-        GET /
-    /serve
-        GET /:path
-    /repository
-        /file
-            DELETE /:path
-        /dir
-            DELETE /:path
-            POST /:path
-        POST /move/:path
-        POST /rename/:path
- */
 pub fn files_router() -> Router {
     Router::new()
         .nest(
@@ -183,10 +166,7 @@ async fn move_entry(
     }
 }
 
-async fn upload_file(
-    Path(path): Path<String>,
-    mut multipart: Multipart
-) -> impl IntoResponse {
+async fn upload_file(Path(path): Path<String>, mut multipart: Multipart) -> impl IntoResponse {
     let field = match match multipart.next_field().await {
         Ok(field) => field,
         Err(err) => return (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()),
@@ -194,16 +174,19 @@ async fn upload_file(
         None => return (StatusCode::BAD_REQUEST, "No file present".to_string()),
         Some(field) => field,
     };
-    
+
     let path = format!("data/repository/{}", path);
-    
+
     let data = match field.bytes().await {
         Ok(bytes) => bytes,
-        Err(err) => return (StatusCode::INTERNAL_SERVER_ERROR,err.to_string()),
+        Err(err) => return (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()),
     };
-    
+
     match fs::write(path, data) {
         Ok(_) => (StatusCode::OK, "".to_string()),
-        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to write".to_string()),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Failed to write".to_string(),
+        ),
     }
 }

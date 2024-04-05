@@ -28,14 +28,31 @@ use tower_http::services::ServeDir;
  */
 pub fn files_router() -> Router {
     Router::new()
-        .route("/repository/move/*path", post(move_entry))
-        .route("/repository/remove/file/*path", delete(remove_file))
-        .route("/repository/remove/folder/*path", delete(remove_dir))
-        .route("/repository/rename/*path", post(rename))
-        .route("/repository/create/folder/*path", post(create_dir))
-        .nest_service("/repository/get/", ServeDir::new("data/repository"))
-        .route("/structure/*path", get(specified_structure))
-        .route("/structure/", get(general_structure))
+        .nest(
+            "/structure/",
+            Router::new()
+                .route("/*path", get(specified_structure))
+                .route("/", get(general_structure)),
+        )
+        .nest(
+            "/repository/",
+            Router::new()
+                .nest(
+                    "/file",
+                    Router::new()
+                        .route("/*path", delete(delete_file))
+                        .route("/*path", post(upload_file)),
+                )
+                .nest(
+                    "/dir",
+                    Router::new()
+                        .route("/*path", delete(delete_dir))
+                        .route("/*path", post(create_dir)),
+                )
+                .route("/move/*path", post(move_entry))
+                .route("/rename/*path", post(rename_entry)),
+        )
+        .nest_service("/serve/", ServeDir::new("data/repository"))
 }
 
 async fn specified_structure(Path(path): Path<String>) -> impl IntoResponse {
@@ -90,7 +107,7 @@ pub struct RenameDirPayload {
     new_name: String,
 }
 
-async fn rename(
+async fn rename_entry(
     Path(path): Path<String>,
     Json(payload): Json<RenameDirPayload>,
 ) -> impl IntoResponse {
@@ -107,7 +124,7 @@ async fn rename(
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }
-async fn remove_file(Path(path): Path<String>) -> impl IntoResponse {
+async fn delete_file(Path(path): Path<String>) -> impl IntoResponse {
     let path = format!("data/repository/{}", path);
 
     if PathBuf::from(path.clone()).exists().not() {
@@ -120,7 +137,7 @@ async fn remove_file(Path(path): Path<String>) -> impl IntoResponse {
     }
 }
 
-async fn remove_dir(Path(path): Path<String>) -> impl IntoResponse {
+async fn delete_dir(Path(path): Path<String>) -> impl IntoResponse {
     let path = format!("data/repository/{}", path);
 
     if PathBuf::from(path.clone()).exists().not() {
@@ -162,3 +179,5 @@ async fn move_entry(
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }
+
+async fn upload_file() -> impl IntoResponse {}

@@ -13,6 +13,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::reload::Handle;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{fmt, reload, Registry};
+use crate::controller::files::files_router;
 
 mod admin_config;
 mod controller;
@@ -43,6 +44,7 @@ async fn main() {
     let app = Router::new()
         .nest("/config", config_router())
         .nest("/theme", theme_router())
+        .nest("/files", files_router())
         .layer(
             ServiceBuilder::new()
                 .layer(AddExtensionLayer::new(state.clone()))

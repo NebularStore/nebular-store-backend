@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::fs;
 use std::ops::Not;
 use std::path::PathBuf;
@@ -13,6 +14,7 @@ use tower_http::services::ServeDir;
 
 pub fn files_router() -> Router {
     Router::new()
+        .route("/repository/move/*path", post(move_entry))
         .route("/repository/remove/file/*path", delete(remove_file))
         .route("/repository/remove/folder/*path", delete(remove_dir))
         .route("/repository/rename/*path", post(rename))
@@ -109,6 +111,31 @@ async fn remove_dir(Path(path): Path<String>) -> impl IntoResponse {
     }
 
     match fs::remove_dir_all(path) {
+        Ok(_) => StatusCode::OK,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR
+    }
+}
+
+#[derive(Deserialize)]
+pub struct MoveEntryPayload {
+    new_path: String
+}
+async fn move_entry(Path(path): Path<String>, Json(payload): Json<MoveEntryPayload>) -> impl IntoResponse {
+    let path = PathBuf::from(format!("data/repository/{}", path));
+    let name = match match path.file_name() {
+        None => return StatusCode::INTERNAL_SERVER_ERROR,
+        Some(name) => name
+    }.to_str() {
+        None => return StatusCode::INTERNAL_SERVER_ERROR,
+        Some(name) => name,
+    };
+    let new_path = format!("data/repository/{}/{}", payload.new_path, name);
+
+    if path.exists().not() {
+        return StatusCode::NOT_FOUND;
+    }
+
+    match fs::rename(path, new_path) {
         Ok(_) => StatusCode::OK,
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR
     }

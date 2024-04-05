@@ -5,8 +5,10 @@ use crate::general_config::{TracingLevel, RELOAD_HANDLE};
 use crate::state::init_state;
 use axum::Router;
 use std::net::SocketAddr;
+use axum::http::Method;
 use tower::ServiceBuilder;
 use tower_http::add_extension::AddExtensionLayer;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
 use tracing::metadata::LevelFilter;
@@ -41,6 +43,10 @@ async fn main() {
         .with(fmt::Layer::default())
         .init();
 
+    let cors = CorsLayer::new()
+        .allow_methods([Method::GET, Method::POST])
+        .allow_origin(Any);
+    
     let app = Router::new()
         .nest("/config", config_router())
         .nest("/theme", theme_router())
@@ -50,7 +56,8 @@ async fn main() {
                 .layer(AddExtensionLayer::new(state.clone()))
                 .layer(TraceLayer::new_for_http())
                 .into_inner(),
-        );
+        )
+        .layer(cors);
 
     let port = state.read().await.general_config.server.port;
     let address = SocketAddr::from(([0, 0, 0, 0], port));

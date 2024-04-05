@@ -1,6 +1,6 @@
 use axum::extract::{Path, Query};
 use axum::response::IntoResponse;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use std::fs;
 use std::ops::Not;
@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 
 pub fn files_router() -> Router {
     Router::new()
+        .route("/repository/remove/file/*path", delete(remove_file))
         .route("/repository/rename/*path", post(rename))
         .route("/repository/create/folder/*path", post(create_dir))
         .nest_service("/repository/get/", ServeDir::new("data/repository"))
@@ -44,6 +45,7 @@ pub struct Entry {
     name: String,
     is_file: bool,
 }
+
 fn get_entries<P: AsRef<std::path::Path>>(path: P) -> Result<Vec<Entry>> {
     let read_dir = fs::read_dir(path)?;
 
@@ -57,7 +59,6 @@ fn get_entries<P: AsRef<std::path::Path>>(path: P) -> Result<Vec<Entry>> {
         })
         .collect())
 }
-
 async fn create_dir(Path(path): Path<String>) -> impl IntoResponse {
     let path = format!("data/repository/{}", path);
     match fs::create_dir_all(path) {
@@ -70,17 +71,30 @@ async fn create_dir(Path(path): Path<String>) -> impl IntoResponse {
 pub struct RenameDirPayload {
     new_name: String
 }
+
 async fn rename(Path(path): Path<String>, Json(payload): Json<RenameDirPayload>) -> impl IntoResponse {
     let path = format!("data/repository/{}", path);
     let mut new_path = PathBuf::from(path.clone());
     new_path.set_file_name(payload.new_name);
-    
+
     if (PathBuf::from(path.clone()).exists().not()) {
         return StatusCode::NOT_FOUND;
     }
-    
+
     match fs::rename(path, new_path) {
         Ok(_) => StatusCode::OK,
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    }
+}
+async fn remove_file(Path(path): Path<String>) -> impl IntoResponse {
+    let path = format!("data/repository/{}", path);
+
+    if (PathBuf::from(path.clone()).exists().not()) {
+        return StatusCode::NOT_FOUND;
+    }
+
+    match fs::remove_file(path) {
+        Ok(_) => StatusCode::OK,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR
     }
 }

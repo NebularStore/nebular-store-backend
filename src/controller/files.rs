@@ -1,18 +1,20 @@
-use axum::extract::{Path, Query};
-use axum::response::IntoResponse;
-use axum::routing::{delete, get, post};
-use axum::{Json, Router};
 use std::fs;
 use std::ops::Not;
 use std::path::PathBuf;
-use tower_http::services::ServeDir;
+
 use anyhow::Result;
+use axum::{Json, Router};
+use axum::extract::Path;
 use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::routing::{delete, get, post};
 use serde::{Deserialize, Serialize};
+use tower_http::services::ServeDir;
 
 pub fn files_router() -> Router {
     Router::new()
         .route("/repository/remove/file/*path", delete(remove_file))
+        .route("/repository/remove/folder/*path", delete(remove_dir))
         .route("/repository/rename/*path", post(rename))
         .route("/repository/create/folder/*path", post(create_dir))
         .nest_service("/repository/get/", ServeDir::new("data/repository"))
@@ -94,6 +96,19 @@ async fn remove_file(Path(path): Path<String>) -> impl IntoResponse {
     }
 
     match fs::remove_file(path) {
+        Ok(_) => StatusCode::OK,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR
+    }
+}
+
+async fn remove_dir(Path(path): Path<String>) -> impl IntoResponse {
+    let path = format!("data/repository/{}", path);
+
+    if (PathBuf::from(path.clone()).exists().not()) {
+        return StatusCode::NOT_FOUND;
+    }
+
+    match fs::remove_dir_all(path) {
         Ok(_) => StatusCode::OK,
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR
     }

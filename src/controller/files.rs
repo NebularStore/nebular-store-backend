@@ -1,15 +1,18 @@
-use axum::extract::Path;
+use axum::extract::{Path, Query};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use std::fs;
+use std::ops::Not;
+use std::path::PathBuf;
 use tower_http::services::ServeDir;
 use anyhow::Result;
 use axum::http::StatusCode;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub fn files_router() -> Router {
     Router::new()
+        .route("/repository/rename/*path", post(rename))
         .route("/repository/create/folder/*path", post(create_dir))
         .nest_service("/repository/get/", ServeDir::new("data/repository"))
         .route("/structure/*path", get(specified_structure))
@@ -59,6 +62,25 @@ async fn create_dir(Path(path): Path<String>) -> impl IntoResponse {
     let path = format!("data/repository/{}", path);
     match fs::create_dir_all(path) {
         Ok(_) => (StatusCode::OK, ""),
-        Err(_) => (StatusCode::BAD_REQUEST, "Directory already exists"),
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, ""),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct RenameDirPayload {
+    new_name: String
+}
+async fn rename(Path(path): Path<String>, Json(payload): Json<RenameDirPayload>) -> impl IntoResponse {
+    let path = format!("data/repository/{}", path);
+    let mut new_path = PathBuf::from(path.clone());
+    new_path.set_file_name(payload.new_name);
+    
+    if (PathBuf::from(path.clone()).exists().not()) {
+        return StatusCode::NOT_FOUND;
+    }
+    
+    match fs::rename(path, new_path) {
+        Ok(_) => StatusCode::OK,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }

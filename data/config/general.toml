@@ -6,4 +6,4 @@ company_name = "Nebular Store"
 icon_path = "data/config/icon.jpeg"
 
 [logging]
-max_level = "Trace"
+max_level = "Warn"

@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.81"
-axum = { version = "0.7.5",features = [] }
+axum = { version = "0.7.5",features = ["multipart"] }
 serde = { version = "1.0.197", features = ["derive"] }
 tokio = { version = "1.37.0", features = ["full"] }
 toml = "0.8.12"

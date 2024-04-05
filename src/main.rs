@@ -1,4 +1,5 @@
 use crate::controller::config::config_router;
+use crate::controller::files::files_router;
 use crate::controller::theme::theme_router;
 use crate::general_config::{TracingLevel, RELOAD_HANDLE};
 use crate::state::init_state;
@@ -13,7 +14,6 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::reload::Handle;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{fmt, reload, Registry};
-use crate::controller::files::files_router;
 
 mod admin_config;
 mod controller;

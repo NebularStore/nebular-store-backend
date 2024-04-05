@@ -1,17 +1,31 @@
-use std::ffi::OsStr;
 use std::fs;
 use std::ops::Not;
 use std::path::PathBuf;
 
 use anyhow::Result;
-use axum::{Json, Router};
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, post};
+use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use tower_http::services::ServeDir;
-
+/*
+/files
+    /structure
+        GET /:path
+        GET /
+    /serve
+        GET /:path
+    /repository
+        /file
+            DELETE /:path
+        /dir
+            DELETE /:path
+            POST /:path
+        POST /move/:path
+        POST /rename/:path
+ */
 pub fn files_router() -> Router {
     Router::new()
         .route("/repository/move/*path", post(move_entry))
@@ -36,7 +50,7 @@ fn get_structure(path: Option<&str>) -> Result<Json<Vec<Entry>>, (StatusCode, &'
     let path = get_path(path);
     match get_entries(path) {
         Ok(entries) => Ok(Json(entries)),
-        Err(_) => Err((StatusCode::NOT_FOUND, "not found"))
+        Err(_) => Err((StatusCode::NOT_FOUND, "not found")),
     }
 }
 
@@ -73,15 +87,18 @@ async fn create_dir(Path(path): Path<String>) -> impl IntoResponse {
 
 #[derive(Deserialize)]
 pub struct RenameDirPayload {
-    new_name: String
+    new_name: String,
 }
 
-async fn rename(Path(path): Path<String>, Json(payload): Json<RenameDirPayload>) -> impl IntoResponse {
+async fn rename(
+    Path(path): Path<String>,
+    Json(payload): Json<RenameDirPayload>,
+) -> impl IntoResponse {
     let path = format!("data/repository/{}", path);
     let mut new_path = PathBuf::from(path.clone());
     new_path.set_file_name(payload.new_name);
 
-    if (PathBuf::from(path.clone()).exists().not()) {
+    if PathBuf::from(path.clone()).exists().not() {
         return StatusCode::NOT_FOUND;
     }
 
@@ -93,39 +110,44 @@ async fn rename(Path(path): Path<String>, Json(payload): Json<RenameDirPayload>)
 async fn remove_file(Path(path): Path<String>) -> impl IntoResponse {
     let path = format!("data/repository/{}", path);
 
-    if (PathBuf::from(path.clone()).exists().not()) {
+    if PathBuf::from(path.clone()).exists().not() {
         return StatusCode::NOT_FOUND;
     }
 
     match fs::remove_file(path) {
         Ok(_) => StatusCode::OK,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }
 
 async fn remove_dir(Path(path): Path<String>) -> impl IntoResponse {
     let path = format!("data/repository/{}", path);
 
-    if (PathBuf::from(path.clone()).exists().not()) {
+    if PathBuf::from(path.clone()).exists().not() {
         return StatusCode::NOT_FOUND;
     }
 
     match fs::remove_dir_all(path) {
         Ok(_) => StatusCode::OK,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }
 
 #[derive(Deserialize)]
 pub struct MoveEntryPayload {
-    new_path: String
+    new_path: String,
 }
-async fn move_entry(Path(path): Path<String>, Json(payload): Json<MoveEntryPayload>) -> impl IntoResponse {
+async fn move_entry(
+    Path(path): Path<String>,
+    Json(payload): Json<MoveEntryPayload>,
+) -> impl IntoResponse {
     let path = PathBuf::from(format!("data/repository/{}", path));
     let name = match match path.file_name() {
         None => return StatusCode::INTERNAL_SERVER_ERROR,
-        Some(name) => name
-    }.to_str() {
+        Some(name) => name,
+    }
+    .to_str()
+    {
         None => return StatusCode::INTERNAL_SERVER_ERROR,
         Some(name) => name,
     };
@@ -137,6 +159,6 @@ async fn move_entry(Path(path): Path<String>, Json(payload): Json<MoveEntryPaylo
 
     match fs::rename(path, new_path) {
         Ok(_) => StatusCode::OK,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }

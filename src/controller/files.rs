@@ -1,6 +1,6 @@
 use axum::extract::Path;
 use axum::response::IntoResponse;
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use std::fs;
 use tower_http::services::ServeDir;
@@ -10,7 +10,8 @@ use serde::Serialize;
 
 pub fn files_router() -> Router {
     Router::new()
-        .nest_service("/repository", ServeDir::new("data/repository"))
+        .route("/repository/create/folder/*path", post(create_dir))
+        .nest_service("/repository/get/", ServeDir::new("data/repository"))
         .route("/structure/*path", get(specified_structure))
         .route("/structure/", get(general_structure))
 }
@@ -52,4 +53,12 @@ fn get_entries<P: AsRef<std::path::Path>>(path: P) -> Result<Vec<Entry>> {
             name: entry.file_name().to_str().unwrap().to_string(),
         })
         .collect())
+}
+
+async fn create_dir(Path(path): Path<String>) -> impl IntoResponse {
+    let path = format!("data/repository/{}", path);
+    match fs::create_dir_all(path) {
+        Ok(_) => (StatusCode::OK, ""),
+        Err(_) => (StatusCode::BAD_REQUEST, "Directory already exists"),
+    }
 }

@@ -2,8 +2,8 @@
 port = 8080
 
 [theme]
-company_name = "Nebular Store"
-icon_path = "data/config/vue_logo.png"
+company_name = "IF-Node"
+icon_path = "data/config/htl_logo.png"
 
 [logging]
 max_level = "Debug"

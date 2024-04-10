@@ -1,3 +1,5 @@
+[server]
+
 [theme]
 company_name = "IF-Node"
 icon_path = "data/config/htl_logo.png"

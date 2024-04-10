@@ -31,7 +31,6 @@ impl GeneralConfig {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ServerConfig {
-    pub port: u16,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

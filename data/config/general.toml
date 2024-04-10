@@ -1,6 +1,3 @@
-[server]
-port = 8080
-
 [theme]
 company_name = "IF-Node"
 icon_path = "data/config/htl_logo.png"

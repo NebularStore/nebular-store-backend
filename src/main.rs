@@ -59,11 +59,10 @@ async fn main() {
         )
         .layer(cors);
 
-    let port = state.read().await.general_config.server.port;
-    let address = SocketAddr::from(([0, 0, 0, 0], port));
+    let address = SocketAddr::from(([0, 0, 0, 0], 8080));
     let listener = tokio::net::TcpListener::bind(address)
         .await
         .expect("Failed to create tcp listener");
-    info!("Starting server on port {}", port);
+    info!("Starting server on port 8080");
     axum::serve(listener, app).await.expect("Failed to serve")
 }
